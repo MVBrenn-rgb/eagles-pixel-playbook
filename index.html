@@ -5,102 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Philly Philly Retro Bowl Animation</title>
 <style>
-  body {
-    background-color: #003366;
-    font-family: 'Courier New', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-  }
-  #game-container { position: relative; }
-  #field { background-color: #006400; border: 2px solid #ffb81c; }
-  #stats-panel {
-    position: absolute;
-    top: 10px;
-    right: -220px;
-    width: 200px;
-    background: rgba(0,0,0,0.7);
-    padding: 10px;
-    border: 1px solid #ffb81c;
-    border-radius: 5px;
-    color: white;
-  }
-  #controls {
-    position: absolute;
-    bottom: -50px;
-    left: 0;
-    display: flex;
-    gap: 10px;
-  }
-  button { padding: 5px 10px; font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer; }
-  #celebration { position: absolute; top: 150px; left: 200px; font-size: 40px; color: #ffb81c; display: none; }
+body { 
+  background-color:#003366; 
+  font-family:'Courier New', monospace; 
+  display:flex; justify-content:center; align-items:center; height:100vh; margin:0; 
+}
+#game-container { position:relative; }
+#field { background-color:#006400; border:2px solid #ffb81c; }
+#stats-panel { 
+  position:absolute; top:10px; right:-220px; width:200px; 
+  background:rgba(0,0,0,0.7); padding:10px; border:1px solid #ffb81c; border-radius:5px; color:white; 
+}
+#controls { position:absolute; bottom:-50px; left:0; display:flex; gap:10px; }
+button { padding:5px 10px; font-family:'Courier New', monospace; font-size:14px; cursor:pointer; }
+#celebration { position:absolute; top:150px; left:200px; font-size:40px; color:#ffb81c; display:none; }
 </style>
 </head>
 <body>
 <div id="game-container">
-  <canvas id="field" width="800" height="400"></canvas>
-  <div id="stats-panel">
-    <h3>Stats / Fun Facts</h3>
-    <p id="stats-text">Foles has thrown 0 touchdowns so far!</p>
-  </div>
-  <div id="controls">
-    <button id="play-btn">Play</button>
-    <button id="pause-btn">Pause</button>
-    <button id="replay-btn">Replay</button>
-  </div>
-  <div id="celebration">TOUCHDOWN! 🎉</div>
+<canvas id="field" width="800" height="400"></canvas>
+<div id="stats-panel">
+<h3>Stats / Fun Facts</h3>
+<p id="stats-text">Foles has thrown 0 touchdowns so far!</p>
+</div>
+<div id="controls">
+<button id="play-btn">Play</button>
+<button id="pause-btn">Pause</button>
+<button id="replay-btn">Replay</button>
+</div>
+<div id="celebration">TOUCHDOWN! 🎉</div>
 </div>
 
 <script>
-const canvas = document.getElementById('field');
-const ctx = canvas.getContext('2d');
+const canvas=document.getElementById('field');
+const ctx=canvas.getContext('2d');
+const playBtn=document.getElementById('play-btn');
+const pauseBtn=document.getElementById('pause-btn');
+const replayBtn=document.getElementById('replay-btn');
+const celebration=document.getElementById('celebration');
+const statsText=document.getElementById('stats-text');
 
-const playBtn = document.getElementById('play-btn');
-const pauseBtn = document.getElementById('pause-btn');
-const replayBtn = document.getElementById('replay-btn');
-const celebration = document.getElementById('celebration');
-const statsText = document.getElementById('stats-text');
+let lastTime=0, gameRunning=false, touchdown=false, step=0, animFrame=0;
 
-let lastTime = 0, gameRunning = false, touchdown = false, step = 0, animationFrame = 0;
+function runningOffset(frame){ return frame%20<10?0:2; }
 
-// Utility for running animation
-function runningOffset(frame){ return frame % 20 < 10 ? 0 : 2; }
-
-// Players
-function Player(x, y, color, helmet){ this.x = x; this.y = y; this.color = color; this.helmet = helmet; this.speed = 0; }
-Player.prototype.draw = function(){
-  let offset = runningOffset(animationFrame);
-  // Body
-  ctx.fillStyle = this.color;
-  ctx.fillRect(this.x, this.y+offset, 16, 16);
-  // Helmet
-  ctx.fillStyle = this.helmet;
-  ctx.fillRect(this.x, this.y-4+offset, 16, 4);
+// Player class
+function Player(x,y,color,helmet){ this.x=x; this.y=y; this.color=color; this.helmet=helmet; this.speed=0; }
+Player.prototype.draw=function(){ 
+  let offset=runningOffset(animFrame);
+  ctx.fillStyle=this.color;
+  ctx.fillRect(this.x,this.y+offset,16,16);
+  ctx.fillStyle=this.helmet;
+  ctx.fillRect(this.x,this.y-4+offset,16,4);
 };
 
 // Teams
-const qb = new Player(100,180,'#00A550','#004C27');
-const rb = new Player(60,200,'#00A550','#004C27');
-const te = new Player(140,160,'#00A550','#004C27');
-const oLine = [new Player(80,150,'#00A550','#004C27'), new Player(80,180,'#00A550','#004C27'), new Player(80,210,'#00A550','#004C27')];
-const dLine = [new Player(600,150,'#002244','#001F3F'), new Player(600,180,'#002244','#001F3F'), new Player(600,210,'#002244','#001F3F')];
-const linebackers = [new Player(550,160,'#002244','#001F3F'), new Player(550,200,'#002244','#001F3F')];
-const defensiveBacks = [new Player(500,140,'#002244','#001F3F'), new Player(500,220,'#002244','#001F3F')];
+const qb=new Player(50,180,'#00A550','#004C27');
+const rb=new Player(30,200,'#00A550','#004C27');
+const te=new Player(90,160,'#00A550','#004C27');
+const receiver=new Player(30,140,'#00A550','#004C27');
 
-const ball = {x: qb.x+8, y: qb.y+8, heldBy:'qb'};
+const oLine=[new Player(40,150,'#00A550','#004C27'), new Player(40,180,'#00A550','#004C27'), new Player(40,210,'#00A550','#004C27')];
+const dLine=[new Player(700,150,'#002244','#001F3F'), new Player(700,180,'#002244','#001F3F'), new Player(700,210,'#002244','#001F3F')];
+const linebackers=[new Player(650,160,'#002244','#001F3F'), new Player(650,200,'#002244','#001F3F')];
+const defensiveBacks=[new Player(600,140,'#002244','#001F3F'), new Player(600,220,'#002244','#001F3F')];
+
+const ball={x:qb.x+8, y:qb.y+8, heldBy:'qb'};
 
 function drawField(){
-  ctx.fillStyle = '#006400';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  // Endzones
-  ctx.fillStyle = '#004C27';
-  ctx.fillRect(0,0,50,canvas.height);
-  ctx.fillStyle = '#001F3F';
-  ctx.fillRect(canvas.width-50,0,50,canvas.height);
-  // Yard markers
-  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle='#006400'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#004C27'; ctx.fillRect(0,0,50,canvas.height);
+  ctx.fillStyle='#001F3F'; ctx.fillRect(canvas.width-50,0,50,canvas.height);
+  ctx.strokeStyle='#ffffff';
   for(let i=0;i<=canvas.width;i+=50){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
 }
 
@@ -109,70 +85,54 @@ function drawAllPlayers(){
   dLine.forEach(p=>p.draw());
   linebackers.forEach(p=>p.draw());
   defensiveBacks.forEach(p=>p.draw());
-  rb.draw(); te.draw(); qb.draw();
-  // Ball
-  ctx.fillStyle = '#8B4513';
+  rb.draw(); te.draw(); qb.draw(); receiver.draw();
+  ctx.fillStyle='#8B4513';
   ctx.beginPath();
-  ctx.ellipse(ball.x, ball.y, 5,3,0,0,2*Math.PI);
-  ctx.fill();
+  ctx.ellipse(ball.x,ball.y,5,3,0,0,2*Math.PI); ctx.fill();
 }
 
 function updatePositions(delta){
   if(!gameRunning) return;
-
-  animationFrame++;
+  animFrame++;
 
   // Philly Philly sequence
-  if(ball.heldBy==='qb'){
-    if(step===0){ qb.x += 100*delta; }
-    if(qb.x>150){ ball.heldBy='rb'; step=1; }
-  } else if(ball.heldBy==='rb'){
-    rb.x += 120*delta;
-    ball.x = rb.x+8; ball.y = rb.y+8;
-    if(rb.x>250){ ball.heldBy='te'; step=2; }
-  } else if(ball.heldBy==='te'){
-    te.x += 100*delta;
-    ball.x = te.x+8; ball.y = te.y+8;
-    if(te.x>400){ ball.heldBy='qbCatch'; step=3; }
-  } else if(ball.heldBy==='qbCatch'){
-    qb.x += 120*delta;
-    ball.x = qb.x+8; ball.y = qb.y+8;
-    if(qb.x>700){
-      touchdown=true; gameRunning=false;
-      celebration.style.display='block';
-      statsText.textContent="Foles scores a TOUCHDOWN!";
-    }
+  if(step===0){ 
+    // Snap to RB
+    ball.heldBy='rb';
+    step=1;
+  } else if(step===1){ 
+    rb.x+=120*delta; ball.x=rb.x+8; ball.y=rb.y+8;
+    if(rb.x>150){ step=2; ball.heldBy='receiver'; receiver.x=30; receiver.y=140; }
+  } else if(step===2){ 
+    receiver.x+=150*delta; ball.x=receiver.x+8; ball.y=receiver.y+8;
+    if(receiver.x>350){ step=3; ball.heldBy='te'; te.x=90; te.y=160; }
+  } else if(step===3){
+    te.x+=100*delta; ball.x=te.x+8; ball.y=te.y+8;
+    if(te.x>500){ step=4; ball.heldBy='qbCatch'; }
+  } else if(step===4){
+    qb.x+=120*delta; ball.x=qb.x+8; ball.y=qb.y+8;
+    if(qb.x>750){ touchdown=true; gameRunning=false; celebration.style.display='block'; statsText.textContent="Foles scores a TOUCHDOWN!"; }
   }
 
-  // Defenders move toward QB
   [...dLine,...linebackers,...defensiveBacks].forEach(d=>{
-    if(d.x>qb.x) d.x -= 80*delta;
-    if(d.y<qb.y) d.y += 40*delta;
-    if(d.y>qb.y) d.y -= 40*delta;
+    if(d.x>qb.x)d.x-=80*delta;
+    if(d.y<qb.y)d.y+=40*delta;
+    if(d.y>qb.y)d.y-=40*delta;
   });
-
-  // Ball position
-  if(ball.heldBy==='qb') { ball.x = qb.x+8; ball.y = qb.y+8; }
-  else if(ball.heldBy==='rb') { ball.x = rb.x+8; ball.y = rb.y+8; }
-  else if(ball.heldBy==='te') { ball.x = te.x+8; ball.y = te.y+8; }
-  else if(ball.heldBy==='qbCatch'){ ball.x = qb.x+8; ball.y = qb.y+8; }
 }
 
 function gameLoop(timestamp){
-  const delta = (timestamp-lastTime)/1000;
-  lastTime=timestamp;
+  const delta=(timestamp-lastTime)/1000; lastTime=timestamp;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawField();
-  updatePositions(delta);
-  drawAllPlayers();
+  drawField(); updatePositions(delta); drawAllPlayers();
   requestAnimationFrame(gameLoop);
 }
 
-playBtn.addEventListener('click',()=>{ gameRunning=true; celebration.style.display='none'; touchdown=false; ball.heldBy='qb'; step=0; });
+playBtn.addEventListener('click',()=>{ gameRunning=true; celebration.style.display='none'; touchdown=false; step=0; ball.heldBy='qb'; });
 pauseBtn.addEventListener('click',()=>{ gameRunning=false; });
 replayBtn.addEventListener('click',()=>{
-  qb.x=100; qb.y=180; rb.x=60; rb.y=200; te.x=140; te.y=160; ball.x=qb.x+8; ball.y=qb.y+8;
-  touchdown=false; gameRunning=true; step=0; celebration.style.display='none';
+  qb.x=50; qb.y=180; rb.x=30; rb.y=200; te.x=90; te.y=160; receiver.x=30; receiver.y=140;
+  ball.x=qb.x+8; ball.y=qb.y+8; touchdown=false; gameRunning=true; step=0; celebration.style.display='none';
   [...dLine,...linebackers,...defensiveBacks].forEach(d=>{ d.x+=0; });
 });
 
