@@ -4,30 +4,172 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Philly Philly Animation</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #003366;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #game-container {
+      position: relative;
+    }
+
+    #field {
+      background-color: #006400;
+      border: 2px solid #ffb81c;
+    }
+
+    #stats-panel {
+      position: absolute;
+      top: 10px;
+      right: -220px;
+      width: 200px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border: 1px solid #ffb81c;
+      border-radius: 5px;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: -50px;
+      left: 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 5px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #celebration {
+      position: absolute;
+      top: 150px;
+      left: 200px;
+      font-size: 40px;
+      color: #ffb81c;
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <div id="game-container">
-    <!-- Field -->
     <canvas id="field" width="800" height="400"></canvas>
 
-    <!-- Stats / Fun Fact Panel -->
     <div id="stats-panel">
       <h3>Stats / Fun Facts</h3>
       <p id="stats-text">Foles has thrown 0 touchdowns so far!</p>
     </div>
 
-    <!-- Controls -->
     <div id="controls">
       <button id="play-btn">Play</button>
       <button id="pause-btn">Pause</button>
       <button id="replay-btn">Replay</button>
     </div>
 
-    <!-- Touchdown Celebration -->
     <div id="celebration">TOUCHDOWN! 🎉</div>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    const canvas = document.getElementById('field');
+    const ctx = canvas.getContext('2d');
+
+    const playBtn = document.getElementById('play-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    const celebration = document.getElementById('celebration');
+    const statsText = document.getElementById('stats-text');
+
+    let lastTime = 0;
+    let gameRunning = false;
+    let touchdown = false;
+
+    const qb = { x: 50, y: 180, speed: 200 };
+    const rb = { x: 50, y: 230, speed: 200 };
+    const defender = { x: 700, y: 180, speed: 150 };
+
+    function drawField() {
+      ctx.fillStyle = '#006400';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= canvas.width; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+
+      for (let j = 0; j <= canvas.height; j += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, j);
+        ctx.lineTo(canvas.width, j);
+        ctx.stroke();
+      }
+    }
+
+    function drawPlayers() {
+      ctx.fillStyle = '#00f';
+      ctx.fillRect(qb.x, qb.y, 20, 20);
+
+      ctx.fillStyle = '#ffb81c';
+      ctx.fillRect(rb.x, rb.y, 20, 20);
+
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(defender.x, defender.y, 20, 20);
+    }
+
+    function gameLoop(timestamp) {
+      const delta = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawField();
+      drawPlayers();
+
+      if (gameRunning) {
+        if (!touchdown) qb.x += qb.speed * delta;
+        if (qb.x > 100) rb.x += rb.speed * delta;
+        defender.x -= defender.speed * delta;
+
+        if (qb.x > 750) {
+          touchdown = true;
+          celebration.style.display = 'block';
+          statsText.textContent = "Foles scores a TOUCHDOWN!";
+          gameRunning = false;
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    playBtn.addEventListener('click', () => { 
+      gameRunning = true; 
+      celebration.style.display = 'none';
+      touchdown = false;
+    });
+
+    pauseBtn.addEventListener('click', () => { gameRunning = false; });
+
+    replayBtn.addEventListener('click', () => {
+      qb.x = 50; rb.x = 50; defender.x = 700; touchdown = false;
+      celebration.style.display = 'none';
+      statsText.textContent = "Foles has thrown 0 touchdowns so far!";
+      gameRunning = true;
+    });
+
+    requestAnimationFrame(gameLoop);
+  </script>
 </body>
 </html>
