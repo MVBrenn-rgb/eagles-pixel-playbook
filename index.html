@@ -1,100 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eagles Pixel Playbook - Philly Special</title>
-<style>
-  body { margin: 0; font-family: Arial, sans-serif; background: #004080; color: #fff; text-align: center; }
-  header { background: #006600; padding: 20px; font-size: 2em; font-weight: bold; }
-  #canvasContainer { position: relative; display: inline-block; margin: 20px; }
-  canvas { background: #004080; border: 2px solid #fff; }
-  #stats { margin-top: 10px; font-size: 1em; }
-  button { padding: 10px 20px; margin: 5px; font-size: 1em; cursor: pointer; border-radius: 5px; border: none; background: #ffcc00; color: #000; }
-  button:hover { background: #ffaa00; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Philly Philly Animation</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="game-container">
+    <!-- Field -->
+    <canvas id="field" width="800" height="400"></canvas>
 
-<header>Philadelphia Eagles Pixel Playbook</header>
+    <!-- Stats / Fun Fact Panel -->
+    <div id="stats-panel">
+      <h3>Stats / Fun Facts</h3>
+      <p id="stats-text">Foles has thrown 0 touchdowns so far!</p>
+    </div>
 
-<div id="canvasContainer">
-  <canvas id="playCanvas" width="500" height="300"></canvas>
-</div>
-<div>
-  <button id="playBtn">Play</button>
-  <button id="pauseBtn">Pause</button>
-  <button id="replayBtn">Replay</button>
-</div>
-<div id="stats"></div>
+    <!-- Controls -->
+    <div id="controls">
+      <button id="play-btn">Play</button>
+      <button id="pause-btn">Pause</button>
+      <button id="replay-btn">Replay</button>
+    </div>
 
-<script>
-const canvas = document.getElementById('playCanvas');
-const ctx = canvas.getContext('2d');
-const statsDiv = document.getElementById('stats');
-let animationId;
-let time = 0;
+    <!-- Touchdown Celebration -->
+    <div id="celebration">TOUCHDOWN! 🎉</div>
+  </div>
 
-// Philly Special pixel players
-const phillySpecial = [
-  { name: 'Center', color: 'white', move: t => ({x: 250, y: 150}) },
-  { name: 'QB (Foles)', color: 'green', move: t => ({x: 250 + (t>20?t-20:0)*2, y: 150}) },
-  { name: 'RB', color: 'yellow', move: t => ({x: 250 + Math.min(t,20)*1.5, y: 150}) },
-  { name: 'WR (Burton)', color: 'orange', move: t => ({x: 150 + Math.max(t-30,0)*3, y: 120 + Math.sin((t-30)/5)*10}) }),
-  { name: 'Defender', color: 'red', move: t => ({x: 300 - Math.min(t,40)*2, y: 150}) }
-];
-
-const playStats = "Philly Special - Super Bowl LII: Trey Burton throws a TD pass to QB Nick Foles!";
-
-function drawField() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = '#ffffff';
-  for(let i=50;i<canvas.width;i+=50){
-    ctx.beginPath();
-    ctx.moveTo(i,0);
-    ctx.lineTo(i,canvas.height);
-    ctx.stroke();
-  }
-}
-
-function drawPlayers() {
-  phillySpecial.forEach(player => {
-    const pos = player.move(time);
-    ctx.fillStyle = player.color;
-    ctx.fillRect(pos.x, pos.y, 10, 10);
-  });
-}
-
-function animate() {
-  drawField();
-  drawPlayers();
-
-  // End zone celebration for Foles
-  if(time > 90) {
-    ctx.fillStyle = 'gold';
-    ctx.font = '20px Arial';
-    ctx.fillText("TOUCHDOWN!", 180, 50);
-  }
-
-  statsDiv.innerText = playStats;
-  time++;
-  if(time < 120) animationId = requestAnimationFrame(animate);
-}
-
-function resetAnimation() {
-  cancelAnimationFrame(animationId);
-  time = 0;
-  drawField();
-  drawPlayers();
-}
-
-document.getElementById('playBtn').addEventListener('click', () => { animate(); });
-document.getElementById('pauseBtn').addEventListener('click', () => { cancelAnimationFrame(animationId); });
-document.getElementById('replayBtn').addEventListener('click', () => { resetAnimation(); animate(); });
-
-// Initialize
-resetAnimation();
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
