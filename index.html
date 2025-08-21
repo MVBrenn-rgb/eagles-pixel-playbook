@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Philly Philly Animation</title>
+  <title>Philly Philly Animation - Retro Bowl Style</title>
   <style>
     body {
       background-color: #003366;
@@ -93,9 +93,30 @@
     let gameRunning = false;
     let touchdown = false;
 
-    const qb = { x: 50, y: 180, speed: 200 };
-    const rb = { x: 50, y: 230, speed: 200 };
-    const defender = { x: 700, y: 180, speed: 150 };
+    // Player definitions
+    const qb = { x: 100, y: 180, color: '#004C27', helmet: '#004C27', speed: 200 };
+    const rb = { x: 60, y: 200, color: '#00A550', helmet: '#004C27', speed: 200 };
+    const te = { x: 140, y: 160, color: '#00A550', helmet: '#004C27', speed: 180 };
+    const oLine = [
+      { x: 80, y: 150, color: '#00A550', helmet: '#004C27' },
+      { x: 80, y: 180, color: '#00A550', helmet: '#004C27' },
+      { x: 80, y: 210, color: '#00A550', helmet: '#004C27' }
+    ];
+    const dLine = [
+      { x: 600, y: 150, color: '#002244', helmet: '#001F3F', speed: 80 },
+      { x: 600, y: 180, color: '#002244', helmet: '#001F3F', speed: 80 },
+      { x: 600, y: 210, color: '#002244', helmet: '#001F3F', speed: 80 }
+    ];
+    const linebackers = [
+      { x: 550, y: 160, color: '#002244', helmet: '#001F3F', speed: 90 },
+      { x: 550, y: 200, color: '#002244', helmet: '#001F3F', speed: 90 }
+    ];
+    const defensiveBacks = [
+      { x: 500, y: 140, color: '#002244', helmet: '#001F3F', speed: 100 },
+      { x: 500, y: 220, color: '#002244', helmet: '#001F3F', speed: 100 }
+    ];
+
+    const ball = { x: qb.x + 10, y: qb.y + 10, heldBy: 'qb' };
 
     function drawField() {
       ctx.fillStyle = '#006400';
@@ -110,7 +131,6 @@
         ctx.lineTo(i, canvas.height);
         ctx.stroke();
       }
-
       for (let j = 0; j <= canvas.height; j += 50) {
         ctx.beginPath();
         ctx.moveTo(0, j);
@@ -119,15 +139,81 @@
       }
     }
 
-    function drawPlayers() {
-      ctx.fillStyle = '#00f';
-      ctx.fillRect(qb.x, qb.y, 20, 20);
+    function drawPlayer(p) {
+      // Body
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, 20, 20);
+      // Helmet
+      ctx.fillStyle = p.helmet;
+      ctx.fillRect(p.x, p.y - 5, 20, 5);
+    }
 
-      ctx.fillStyle = '#ffb81c';
-      ctx.fillRect(rb.x, rb.y, 20, 20);
+    function drawAllPlayers() {
+      oLine.forEach(drawPlayer);
+      dLine.forEach(drawPlayer);
+      linebackers.forEach(drawPlayer);
+      defensiveBacks.forEach(drawPlayer);
 
-      ctx.fillStyle = '#f00';
-      ctx.fillRect(defender.x, defender.y, 20, 20);
+      drawPlayer(rb);
+      drawPlayer(te);
+      drawPlayer(qb);
+
+      // Ball
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function updatePositions(delta) {
+      if (!gameRunning) return;
+
+      // Simple play sequence: Snap → RB → Handoff → TE throw → QB catch
+      if (ball.heldBy === 'qb') {
+        qb.x += qb.speed * delta;
+        rb.x += 0;
+        te.x += 0;
+        ball.x = qb.x + 10;
+        ball.y = qb.y + 10;
+
+        if (qb.x > 150) {
+          ball.heldBy = 'rb';
+        }
+      } else if (ball.heldBy === 'rb') {
+        rb.x += rb.speed * delta;
+        ball.x = rb.x + 10;
+        ball.y = rb.y + 10;
+
+        if (rb.x > 250) {
+          ball.heldBy = 'te';
+        }
+      } else if (ball.heldBy === 'te') {
+        te.x += te.speed * delta;
+        ball.x = te.x + 10;
+        ball.y = te.y + 10;
+
+        if (te.x > 400) {
+          ball.heldBy = 'qbCatch';
+        }
+      } else if (ball.heldBy === 'qbCatch') {
+        qb.x += qb.speed * delta;
+        ball.x = qb.x + 10;
+        ball.y = qb.y + 10;
+
+        if (qb.x > 700) {
+          touchdown = true;
+          gameRunning = false;
+          celebration.style.display = 'block';
+          statsText.textContent = "Foles scores a TOUCHDOWN!";
+        }
+      }
+
+      // Move defenders simply toward QB
+      [...dLine, ...linebackers, ...defensiveBacks].forEach(def => {
+        if (def.x > qb.x) def.x -= def.speed * delta;
+        if (def.y < qb.y) def.y += def.speed * delta * 0.5;
+        if (def.y > qb.y) def.y -= def.speed * delta * 0.5;
+      });
     }
 
     function gameLoop(timestamp) {
@@ -136,20 +222,8 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawField();
-      drawPlayers();
-
-      if (gameRunning) {
-        if (!touchdown) qb.x += qb.speed * delta;
-        if (qb.x > 100) rb.x += rb.speed * delta;
-        defender.x -= defender.speed * delta;
-
-        if (qb.x > 750) {
-          touchdown = true;
-          celebration.style.display = 'block';
-          statsText.textContent = "Foles scores a TOUCHDOWN!";
-          gameRunning = false;
-        }
-      }
+      updatePositions(delta);
+      drawAllPlayers();
 
       requestAnimationFrame(gameLoop);
     }
@@ -158,15 +232,21 @@
       gameRunning = true; 
       celebration.style.display = 'none';
       touchdown = false;
+      ball.heldBy = 'qb';
     });
 
     pauseBtn.addEventListener('click', () => { gameRunning = false; });
 
     replayBtn.addEventListener('click', () => {
-      qb.x = 50; rb.x = 50; defender.x = 700; touchdown = false;
+      qb.x = 100; qb.y = 180;
+      rb.x = 60; rb.y = 200;
+      te.x = 140; te.y = 160;
+      ball.x = qb.x + 10; ball.y = qb.y + 10;
+      touchdown = false;
+      gameRunning = true;
       celebration.style.display = 'none';
       statsText.textContent = "Foles has thrown 0 touchdowns so far!";
-      gameRunning = true;
+      [...dLine, ...linebackers, ...defensiveBacks].forEach(d => { d.x += 0; });
     });
 
     requestAnimationFrame(gameLoop);
